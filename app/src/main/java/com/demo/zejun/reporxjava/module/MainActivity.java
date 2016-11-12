@@ -11,6 +11,12 @@ import com.demo.zejun.reporxjava.R;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
@@ -24,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mBasicButton;
     private Button mMapButton;
     private Button mFlatMapButton;
+    private Button mOnlyRetrofitButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +55,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 flatMapSample();
+            }
+        });
+        mOnlyRetrofitButton = (Button) findViewById(R.id.only_retrofit_btn);
+        mOnlyRetrofitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getRxJavaRetrofit();
             }
         });
     }
@@ -155,5 +169,59 @@ public class MainActivity extends AppCompatActivity {
             }
 
         }).subscribe(subscriber);
+    }
+
+    private void getOnlyRetrofit() {
+        String baseUrl = "https://api.douban.com/v2/movie/";
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        MovieService movieService = retrofit.create(MovieService.class);
+        Call<MovieEntity> call = movieService.getTopMovie(0, 10);
+        call.enqueue(new Callback<MovieEntity>() {
+
+            @Override
+            public void onResponse(Call<MovieEntity> call, Response<MovieEntity> response) {
+                String str = response.body().toString();
+                Log.d(TAG, "onResponse:" + str);
+            }
+
+            @Override
+            public void onFailure(Call<MovieEntity> call, Throwable t) {
+                Log.d(TAG, "onFailure");
+            }
+        });
+    }
+
+    private void getRxJavaRetrofit() {
+        String baseUrl = "https://api.douban.com/v2/movie/";
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .build();
+        RxMoveService rxMoveService = retrofit.create(RxMoveService.class);
+        rxMoveService.getTopMovie(0, 10)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<MovieEntity>() {
+
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "onCompleted");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(MovieEntity movieEntity) {
+                        int count = movieEntity.getCount();
+                        Log.d(TAG, "onNext, count=" + count);
+                    }
+                });
     }
 }

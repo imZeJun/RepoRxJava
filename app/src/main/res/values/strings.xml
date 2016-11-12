@@ -3,4 +3,5 @@
     <string name="basic">Basic</string>
     <string name="map">Map</string>
     <string name="flat_map">FlatMap</string>
+    <string name="only_retrofit">OnlyRetrofit</string>
 </resources>
